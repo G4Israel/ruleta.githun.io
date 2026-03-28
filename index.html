@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruleta Multijugador Firebase</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+        .hidden { display: none !important; }
+        .roulette-wrapper { position: relative; width: 400px; height: 400px; margin: 0 auto; }
+        #canvas { border-radius: 50%; box-shadow: 0 0 20px rgba(0,0,0,0.2); transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); }
+        .marker { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); z-index: 10; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 40px solid #dc3545; }
+        .spin-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; border-radius: 50%; background: #ffc107; font-weight: bold; z-index: 20; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="#">🎯 Ruleta Live</a>
+        <div id="userInfo" class="text-white hidden">
+            <span id="userEmail" class="me-3"></span>
+            <button class="btn btn-sm btn-outline-light" onclick="logout()">Salir</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-5">
+
+    <div id="authSection" class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h3 class="text-center mb-4">Ingresar a la Plataforma</h3>
+                    <input type="email" id="email" class="form-control mb-3" placeholder="Correo electrónico">
+                    <input type="password" id="password" class="form-control mb-3" placeholder="Contraseña">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" id="btnLogin">Iniciar Sesión</button>
+                        <button class="btn btn-outline-secondary" id="btnRegister">Crear Cuenta</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboardSection" class="hidden">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-info d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-users"></i> <strong>Usuarios activos hoy:</strong> <span id="activeUsersCount">Cargando...</span></span>
+                    <small>(Tiempo Real)</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h4><i class="fas fa-plus-circle text-success"></i> Crear Nueva Ruleta</h4>
+                        <p class="text-muted">Crea una sala y comparte la contraseña.</p>
+                        <input type="text" id="newRoomName" class="form-control mb-2" placeholder="Nombre de la sala (Ej. Retos Locos)">
+                        <input type="password" id="newRoomPass" class="form-control mb-3" placeholder="Contraseña de la sala">
+                        <button class="btn btn-success" id="btnCreateRoom">Crear y Entrar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h4><i class="fas fa-sign-in-alt text-primary"></i> Unirse a una Ruleta</h4>
+                        <p class="text-muted">Ingresa el ID de la sala y la contraseña.</p>
+                        <input type="text" id="joinRoomId" class="form-control mb-2" placeholder="ID de la sala">
+                        <input type="password" id="joinRoomPass" class="form-control mb-3" placeholder="Contraseña">
+                        <button class="btn btn-primary" id="btnJoinRoom">Unirse</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="rouletteSection" class="hidden">
+        <button class="btn btn-secondary mb-3" onclick="showSection('dashboardSection')"><i class="fas fa-arrow-left"></i> Volver al panel</button>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0" id="currentRoomName">Sala: ...</h5>
+                        <small>ID: <span id="currentRoomIdDisplay"></span></small>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group mb-3">
+                            <input type="text" id="newChallenge" class="form-control" placeholder="Añadir reto...">
+                            <button class="btn btn-success" id="btnAddChallenge"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <ul class="list-group" id="challengeList">
+                            </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8 text-center">
+                <div class="roulette-wrapper">
+                    <div class="marker"></div>
+                    <canvas id="canvas" width="400" height="400"></canvas>
+                    <button id="spinBtn" class="spin-btn">GIRAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script type="module">
+    // IMPORTACIONES DE FIREBASE V10
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, doc, onSnapshot, updateDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    /* =========================================================
+       1. CONFIGURACIÓN DE FIREBASE (¡DEBES LLENAR ESTO!)
+       Ve a la consola de Firebase -> Configuración del proyecto -> Copia y pega tu config aquí
+    ========================================================= */
+    const firebaseConfig = {
+        apiKey: "TU_API_KEY",
+        authDomain: "TU_PROYECTO.firebaseapp.com",
+        projectId: "TU_PROYECTO",
+        storageBucket: "TU_PROYECTO.appspot.com",
+        messagingSenderId: "TU_SENDER_ID",
+        appId: "TU_APP_ID"
+    };
+
+    // Inicialización (Esto fallará hasta que pongas tus datos reales)
+    // const app = initializeApp(firebaseConfig);
+    // const auth = getAuth(app);
+    // const db = getFirestore(app);
+
+    // =========================================================
+    // LÓGICA DE INTERFAZ (UI) - Simulación para que pruebes el flujo
+    // =========================================================
+    
+    window.showSection = function(sectionId) {
+        document.getElementById('authSection').classList.add('hidden');
+        document.getElementById('dashboardSection').classList.add('hidden');
+        document.getElementById('rouletteSection').classList.add('hidden');
+        document.getElementById(sectionId).classList.remove('hidden');
+    }
+
+    // SIMULAR LOGIN
+    document.getElementById('btnLogin').addEventListener('click', () => {
+        // Aquí iría: signInWithEmailAndPassword(auth, email, pass)...
+        document.getElementById('userInfo').classList.remove('hidden');
+        document.getElementById('userEmail').innerText = document.getElementById('email').value || "usuario@demo.com";
+        showSection('dashboardSection');
+        Swal.fire('¡Conectado!', 'Bienvenido al panel', 'success');
+        
+        // Simular contador en tiempo real de Firebase
+        document.getElementById('activeUsersCount').innerText = Math.floor(Math.random() * 50) + 1;
+    });
+
+    window.logout = function() {
+        // signOut(auth)...
+        document.getElementById('userInfo').classList.add('hidden');
+        showSection('authSection');
+    }
+
+    // SIMULAR CREAR SALA
+    document.getElementById('btnCreateRoom').addEventListener('click', () => {
+        const name = document.getElementById('newRoomName').value;
+        const pass = document.getElementById('newRoomPass').value;
+        if(!name || !pass) return Swal.fire('Error', 'Llena todos los campos', 'error');
+        
+        // Aquí iría: addDoc(collection(db, "rooms"), { name, pass, challenges: [] })
+        
+        document.getElementById('currentRoomName').innerText = `Sala: ${name}`;
+        document.getElementById('currentRoomIdDisplay').innerText = "AbCdEf123 (Simulado)";
+        showSection('rouletteSection');
+    });
+
+    // SIMULAR UNIRSE A SALA
+    document.getElementById('btnJoinRoom').addEventListener('click', () => {
+        // Aquí iría: getDoc(doc(db, "rooms", id))... verificar contraseña
+        showSection('rouletteSection');
+    });
+
+    // =========================================================
+    // LÓGICA DE LA RULETA (Canvas)
+    // =========================================================
+    let challenges = ["Reto 1", "Reto 2", "Reto 3"]; // En la vida real, esto vendrá de onSnapshot de Firebase
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const colors = ['#f1c40f', '#e67e22', '#e74c3c', '#9b59b6', '#3498db', '#1abc9c'];
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const sliceAngle = (2 * Math.PI) / challenges.length;
+        const radius = canvas.width / 2;
+        
+        for (let i = 0; i < challenges.length; i++) {
+            const angle = i * sliceAngle - Math.PI / 2;
+            ctx.beginPath();
+            ctx.moveTo(radius, radius);
+            ctx.arc(radius, radius, radius, angle, angle + sliceAngle);
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.save();
+            ctx.translate(radius, radius);
+            ctx.rotate(angle + sliceAngle / 2);
+            ctx.textAlign = "right";
+            ctx.fillStyle = "white";
+            ctx.font = "bold 16px Arial";
+            ctx.fillText(challenges[i], radius - 20, 5);
+            ctx.restore();
+        }
+        
+        // Renderizar lista
+        const list = document.getElementById('challengeList');
+        list.innerHTML = '';
+        challenges.forEach(c => list.innerHTML += `<li class="list-group-item">${c}</li>`);
+    }
+
+    document.getElementById('btnAddChallenge').addEventListener('click', () => {
+        const input = document.getElementById('newChallenge');
+        if(input.value) {
+            challenges.push(input.value);
+            // Aquí iría: updateDoc(docRef, { challenges: arrayUnion(input.value) })
+            input.value = '';
+            draw();
+        }
+    });
+
+    let currentRotation = 0;
+    document.getElementById('spinBtn').addEventListener('click', () => {
+        // En Firebase, en lugar de girar localmente, actualizarías la base de datos:
+        // updateDoc(roomRef, { targetRotation: nuevaRotacionAleatoria })
+        
+        // Simulación visual local
+        const totalRotation = (5 * 360) + Math.floor(Math.random() * 360);
+        currentRotation += totalRotation;
+        canvas.style.transform = `rotate(${currentRotation}deg)`;
+    });
+
+    draw();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</body>
+</html>
