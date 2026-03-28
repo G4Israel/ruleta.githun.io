@@ -22,83 +22,62 @@
     <div class="container">
         <a class="navbar-brand" href="#">🎯 Ruleta Live</a>
         <div id="userInfo" class="text-white hidden">
-            <span id="userEmail" class="me-3"></span>
-            <button class="btn btn-sm btn-outline-light" onclick="logout()">Salir</button>
+            <img id="userAvatar" src="" alt="Avatar" class="rounded-circle me-2" width="30">
+            <span id="userName" class="me-3"></span>
+            <button class="btn btn-sm btn-outline-light" id="btnLogout">Salir</button>
         </div>
     </div>
 </nav>
 
 <div class="container mt-5">
-
     <div id="authSection" class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card shadow">
-                <div class="card-body">
-                    <h3 class="text-center mb-4">Ingresar a la Plataforma</h3>
-                    <input type="email" id="email" class="form-control mb-3" placeholder="Correo electrónico">
-                    <input type="password" id="password" class="form-control mb-3" placeholder="Contraseña">
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-primary" id="btnLogin">Iniciar Sesión</button>
-                        <button class="btn btn-outline-secondary" id="btnRegister">Crear Cuenta</button>
-                    </div>
-                </div>
+        <div class="col-md-5 text-center">
+            <div class="card shadow p-4">
+                <h3 class="mb-4">Bienvenido</h3>
+                <button class="btn btn-danger btn-lg w-100" id="btnGoogleLogin">
+                    <i class="fab fa-google me-2"></i> Ingresar con Google
+                </button>
             </div>
         </div>
     </div>
 
     <div id="dashboardSection" class="hidden">
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="alert alert-info d-flex justify-content-between align-items-center">
-                    <span><i class="fas fa-users"></i> <strong>Usuarios activos hoy:</strong> <span id="activeUsersCount">Cargando...</span></span>
-                    <small>(Tiempo Real)</small>
-                </div>
-            </div>
-        </div>
-
         <div class="row">
             <div class="col-md-6 mb-4">
-                <div class="card shadow-sm h-100">
-                    <div class="card-body">
-                        <h4><i class="fas fa-plus-circle text-success"></i> Crear Nueva Ruleta</h4>
-                        <p class="text-muted">Crea una sala y comparte la contraseña.</p>
-                        <input type="text" id="newRoomName" class="form-control mb-2" placeholder="Nombre de la sala (Ej. Retos Locos)">
-                        <input type="password" id="newRoomPass" class="form-control mb-3" placeholder="Contraseña de la sala">
-                        <button class="btn btn-success" id="btnCreateRoom">Crear y Entrar</button>
-                    </div>
+                <div class="card shadow-sm h-100 p-3">
+                    <h4><i class="fas fa-plus-circle text-success"></i> Crear Nueva Ruleta</h4>
+                    <input type="text" id="newRoomName" class="form-control mb-2" placeholder="Nombre de la sala">
+                    <input type="password" id="newRoomPass" class="form-control mb-3" placeholder="Contraseña de la sala">
+                    <button class="btn btn-success" id="btnCreateRoom">Crear y Entrar</button>
                 </div>
             </div>
 
             <div class="col-md-6 mb-4">
-                <div class="card shadow-sm h-100">
-                    <div class="card-body">
-                        <h4><i class="fas fa-sign-in-alt text-primary"></i> Unirse a una Ruleta</h4>
-                        <p class="text-muted">Ingresa el ID de la sala y la contraseña.</p>
-                        <input type="text" id="joinRoomId" class="form-control mb-2" placeholder="ID de la sala">
-                        <input type="password" id="joinRoomPass" class="form-control mb-3" placeholder="Contraseña">
-                        <button class="btn btn-primary" id="btnJoinRoom">Unirse</button>
-                    </div>
+                <div class="card shadow-sm h-100 p-3">
+                    <h4><i class="fas fa-sign-in-alt text-primary"></i> Unirse a una Ruleta</h4>
+                    <input type="text" id="joinRoomId" class="form-control mb-2" placeholder="ID de la sala">
+                    <input type="password" id="joinRoomPass" class="form-control mb-3" placeholder="Contraseña">
+                    <button class="btn btn-primary" id="btnJoinRoom">Unirse</button>
                 </div>
             </div>
         </div>
     </div>
 
     <div id="rouletteSection" class="hidden">
-        <button class="btn btn-secondary mb-3" onclick="showSection('dashboardSection')"><i class="fas fa-arrow-left"></i> Volver al panel</button>
+        <button class="btn btn-secondary mb-3" id="btnLeaveRoom"><i class="fas fa-arrow-left"></i> Salir de la sala</button>
         <div class="row">
             <div class="col-md-4">
                 <div class="card">
                     <div class="card-header bg-dark text-white">
-                        <h5 class="mb-0" id="currentRoomName">Sala: ...</h5>
-                        <small>ID: <span id="currentRoomIdDisplay"></span></small>
+                        <h5 class="mb-0" id="currentRoomName">Sala...</h5>
+                        <small>ID para invitar: <strong id="currentRoomIdDisplay" class="text-warning"></strong></small>
                     </div>
                     <div class="card-body">
                         <div class="input-group mb-3">
                             <input type="text" id="newChallenge" class="form-control" placeholder="Añadir reto...">
                             <button class="btn btn-success" id="btnAddChallenge"><i class="fas fa-plus"></i></button>
                         </div>
-                        <ul class="list-group" id="challengeList">
-                            </ul>
+                        <ul class="list-group" id="challengeList"></ul>
                     </div>
                 </div>
             </div>
@@ -112,19 +91,14 @@
             </div>
         </div>
     </div>
-
 </div>
 
 <script type="module">
-    // IMPORTACIONES DE FIREBASE V10
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, doc, onSnapshot, updateDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, doc, getDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    /* =========================================================
-       1. CONFIGURACIÓN DE FIREBASE (¡DEBES LLENAR ESTO!)
-       Ve a la consola de Firebase -> Configuración del proyecto -> Copia y pega tu config aquí
-    ========================================================= */
+    // 1. PEGA TU CONFIGURACIÓN AQUÍ
     const firebaseConfig = {
     apiKey: "AIzaSyAYwcsRMvGuXdIu7iVv-USSxSGBLlaOGIM",
     authDomain: "ruleta-cb504.firebaseapp.com",
@@ -135,73 +109,122 @@
     measurementId: "G-5NFYLB98HR"
   };
 
-    // Inicialización (Esto fallará hasta que pongas tus datos reales)
-    // const app = initializeApp(firebaseConfig);
-    // const auth = getAuth(app);
-    // const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const googleProvider = new GoogleAuthProvider();
 
-    // =========================================================
-    // LÓGICA DE INTERFAZ (UI) - Simulación para que pruebes el flujo
-    // =========================================================
-    
-    window.showSection = function(sectionId) {
-        document.getElementById('authSection').classList.add('hidden');
-        document.getElementById('dashboardSection').classList.add('hidden');
-        document.getElementById('rouletteSection').classList.add('hidden');
-        document.getElementById(sectionId).classList.remove('hidden');
+    let currentUser = null;
+    let currentRoomId = null;
+    let unsubscribeRoom = null; // Para detener la escucha cuando salimos
+    let challenges = [];
+
+    // --- UI NAVIGATION ---
+    const showSection = (id) => {
+        ['authSection', 'dashboardSection', 'rouletteSection'].forEach(s => document.getElementById(s).classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
     }
 
-    // SIMULAR LOGIN
-    document.getElementById('btnLogin').addEventListener('click', () => {
-        // Aquí iría: signInWithEmailAndPassword(auth, email, pass)...
-        document.getElementById('userInfo').classList.remove('hidden');
-        document.getElementById('userEmail').innerText = document.getElementById('email').value || "usuario@demo.com";
-        showSection('dashboardSection');
-        Swal.fire('¡Conectado!', 'Bienvenido al panel', 'success');
-        
-        // Simular contador en tiempo real de Firebase
-        document.getElementById('activeUsersCount').innerText = Math.floor(Math.random() * 50) + 1;
+    // --- AUTENTICACIÓN ---
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUser = user;
+            document.getElementById('userInfo').classList.remove('hidden');
+            document.getElementById('userName').innerText = user.displayName;
+            document.getElementById('userAvatar').src = user.photoURL;
+            showSection('dashboardSection');
+        } else {
+            currentUser = null;
+            document.getElementById('userInfo').classList.add('hidden');
+            showSection('authSection');
+        }
     });
 
-    window.logout = function() {
-        // signOut(auth)...
-        document.getElementById('userInfo').classList.add('hidden');
-        showSection('authSection');
-    }
+    document.getElementById('btnGoogleLogin').addEventListener('click', () => signInWithPopup(auth, googleProvider));
+    document.getElementById('btnLogout').addEventListener('click', () => signOut(auth));
 
-    // SIMULAR CREAR SALA
-    document.getElementById('btnCreateRoom').addEventListener('click', () => {
+    // --- SALAS ---
+    document.getElementById('btnCreateRoom').addEventListener('click', async () => {
         const name = document.getElementById('newRoomName').value;
         const pass = document.getElementById('newRoomPass').value;
-        if(!name || !pass) return Swal.fire('Error', 'Llena todos los campos', 'error');
-        
-        // Aquí iría: addDoc(collection(db, "rooms"), { name, pass, challenges: [] })
-        
-        document.getElementById('currentRoomName').innerText = `Sala: ${name}`;
-        document.getElementById('currentRoomIdDisplay').innerText = "AbCdEf123 (Simulado)";
-        showSection('rouletteSection');
+        if (!name || !pass) return Swal.fire('Error', 'Llena nombre y contraseña', 'error');
+
+        try {
+            const docRef = await addDoc(collection(db, "rooms"), {
+                name: name,
+                pass: pass,
+                challenges: ["Reto de prueba 1", "Reto de prueba 2"],
+                rotation: 0,
+                adminId: currentUser.uid
+            });
+            enterRoom(docRef.id, name);
+        } catch (e) {
+            console.error(e);
+            Swal.fire('Error', 'No se pudo crear la sala', 'error');
+        }
     });
 
-    // SIMULAR UNIRSE A SALA
-    document.getElementById('btnJoinRoom').addEventListener('click', () => {
-        // Aquí iría: getDoc(doc(db, "rooms", id))... verificar contraseña
-        showSection('rouletteSection');
+    document.getElementById('btnJoinRoom').addEventListener('click', async () => {
+        const id = document.getElementById('joinRoomId').value.trim();
+        const pass = document.getElementById('joinRoomPass').value;
+        if (!id || !pass) return Swal.fire('Error', 'Faltan datos', 'error');
+
+        try {
+            const roomDoc = await getDoc(doc(db, "rooms", id));
+            if (roomDoc.exists() && roomDoc.data().pass === pass) {
+                enterRoom(id, roomDoc.data().name);
+            } else {
+                Swal.fire('Error', 'ID o contraseña incorrectos', 'error');
+            }
+        } catch (e) {
+            Swal.fire('Error', 'Sala no encontrada', 'error');
+        }
     });
 
-    // =========================================================
-    // LÓGICA DE LA RULETA (Canvas)
-    // =========================================================
-    let challenges = ["Reto 1", "Reto 2", "Reto 3"]; // En la vida real, esto vendrá de onSnapshot de Firebase
+    function enterRoom(roomId, roomName) {
+        currentRoomId = roomId;
+        document.getElementById('currentRoomName').innerText = `Sala: ${roomName}`;
+        document.getElementById('currentRoomIdDisplay').innerText = roomId;
+        showSection('rouletteSection');
+        
+        // Escuchar cambios en tiempo real
+        unsubscribeRoom = onSnapshot(doc(db, "rooms", roomId), (doc) => {
+            const data = doc.data();
+            if(data) {
+                challenges = data.challenges || [];
+                drawRoulette();
+                // Si la rotación cambia en la base de datos, giramos la ruleta localmente
+                if(data.rotation) canvas.style.transform = `rotate(${data.rotation}deg)`;
+            }
+        });
+    }
+
+    document.getElementById('btnLeaveRoom').addEventListener('click', () => {
+        if(unsubscribeRoom) unsubscribeRoom(); // Dejar de escuchar Firebase
+        currentRoomId = null;
+        showSection('dashboardSection');
+    });
+
+    // --- LÓGICA DE LA RULETA (CANVAS) ---
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    const colors = ['#f1c40f', '#e67e22', '#e74c3c', '#9b59b6', '#3498db', '#1abc9c'];
+    const colors = ['#f1c40f', '#e67e22', '#e74c3c', '#9b59b6', '#3498db', '#1abc9c', '#2ecc71'];
 
-    function draw() {
+    function drawRoulette() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const list = document.getElementById('challengeList');
+        list.innerHTML = '';
+
+        if (challenges.length === 0) return;
+
         const sliceAngle = (2 * Math.PI) / challenges.length;
         const radius = canvas.width / 2;
-        
-        for (let i = 0; i < challenges.length; i++) {
+
+        challenges.forEach((challenge, i) => {
+            // Dibujar lista
+            list.innerHTML += `<li class="list-group-item">${challenge}</li>`;
+            
+            // Dibujar rebanada
             const angle = i * sliceAngle - Math.PI / 2;
             ctx.beginPath();
             ctx.moveTo(radius, radius);
@@ -215,39 +238,38 @@
             ctx.rotate(angle + sliceAngle / 2);
             ctx.textAlign = "right";
             ctx.fillStyle = "white";
-            ctx.font = "bold 16px Arial";
-            ctx.fillText(challenges[i], radius - 20, 5);
+            ctx.font = "bold 14px Arial";
+            ctx.fillText(challenge.substring(0, 15), radius - 20, 5);
             ctx.restore();
-        }
-        
-        // Renderizar lista
-        const list = document.getElementById('challengeList');
-        list.innerHTML = '';
-        challenges.forEach(c => list.innerHTML += `<li class="list-group-item">${c}</li>`);
+        });
     }
 
-    document.getElementById('btnAddChallenge').addEventListener('click', () => {
+    document.getElementById('btnAddChallenge').addEventListener('click', async () => {
         const input = document.getElementById('newChallenge');
-        if(input.value) {
-            challenges.push(input.value);
-            // Aquí iría: updateDoc(docRef, { challenges: arrayUnion(input.value) })
+        if(input.value && currentRoomId) {
+            await updateDoc(doc(db, "rooms", currentRoomId), {
+                challenges: arrayUnion(input.value)
+            });
             input.value = '';
-            draw();
         }
     });
 
-    let currentRotation = 0;
-    document.getElementById('spinBtn').addEventListener('click', () => {
-        // En Firebase, en lugar de girar localmente, actualizarías la base de datos:
-        // updateDoc(roomRef, { targetRotation: nuevaRotacionAleatoria })
+    document.getElementById('spinBtn').addEventListener('click', async () => {
+        if(!currentRoomId || challenges.length === 0) return;
         
-        // Simulación visual local
+        // En lugar de girar localmente, le decimos a Firebase que gire
+        // Como todos están escuchando con onSnapshot, la ruleta girará para todos a la vez.
         const totalRotation = (5 * 360) + Math.floor(Math.random() * 360);
-        currentRotation += totalRotation;
-        canvas.style.transform = `rotate(${currentRotation}deg)`;
+        
+        // Obtenemos la rotación actual para sumarle la nueva
+        const roomDoc = await getDoc(doc(db, "rooms", currentRoomId));
+        const currentDbRotation = roomDoc.data().rotation || 0;
+
+        await updateDoc(doc(db, "rooms", currentRoomId), {
+            rotation: currentDbRotation + totalRotation
+        });
     });
 
-    draw();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
