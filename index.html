@@ -96,30 +96,30 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, doc, getDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    // Cambiamos firestore por database
+    import { getDatabase, ref, set, push, onValue, update, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // 1. PEGA TU CONFIGURACIÓN AQUÍ
+    // Tu configuración (la mantuve igual)
     const firebaseConfig = {
-    apiKey: "AIzaSyAYwcsRMvGuXdIu7iVv-USSxSGBLlaOGIM",
-    authDomain: "ruleta-cb504.firebaseapp.com",
-    projectId: "ruleta-cb504",
-    storageBucket: "ruleta-cb504.firebasestorage.app",
-    messagingSenderId: "160498901059",
-    appId: "1:160498901059:web:fe304467a5ab326bf8b4f6",
-    measurementId: "G-5NFYLB98HR"
-  };
+        apiKey: "AIzaSyAYwcsRMvGuXdIu7iVv-USSxSGBLlaOGIM",
+        authDomain: "ruleta-cb504.firebaseapp.com",
+        databaseURL: "https://ruleta-cb504-default-rtdb.firebaseio.com", // Asegúrate de que esta URL sea la de tu consola
+        projectId: "ruleta-cb504",
+        storageBucket: "ruleta-cb504.firebasestorage.app",
+        messagingSenderId: "160498901059",
+        appId: "1:160498901059:web:fe304467a5ab326bf8b4f6",
+        measurementId: "G-5NFYLB98HR"
+    };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db = getFirestore(app);
+    const db = getDatabase(app); // Base de datos en tiempo real
     const googleProvider = new GoogleAuthProvider();
 
     let currentUser = null;
     let currentRoomId = null;
-    let unsubscribeRoom = null; // Para detener la escucha cuando salimos
     let challenges = [];
 
-    // --- UI NAVIGATION ---
     const showSection = (id) => {
         ['authSection', 'dashboardSection', 'rouletteSection'].forEach(s => document.getElementById(s).classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
@@ -132,6 +132,7 @@
             document.getElementById('userInfo').classList.remove('hidden');
             document.getElementById('userName').innerText = user.displayName;
             document.getElementById('userAvatar').src = user.photoURL;
+            registrarVisita(user);
             showSection('dashboardSection');
         } else {
             currentUser = null;
@@ -143,41 +144,53 @@
     document.getElementById('btnGoogleLogin').addEventListener('click', () => signInWithPopup(auth, googleProvider));
     document.getElementById('btnLogout').addEventListener('click', () => signOut(auth));
 
-    // --- SALAS ---
+    // --- PANEL ADMIN: CONTADOR DE USUARIOS ---
+    function registrarVisita(user) {
+        const hoy = new Date().toISOString().split('T')[0];
+        const statsRef = ref(db, `stats/${hoy}/${user.uid}`);
+        set(statsRef, { name: user.displayName, lastSeen: Date.now() });
+
+        // Escuchar cuántos hay hoy
+        onValue(ref(db, `stats/${hoy}`), (snapshot) => {
+            if (snapshot.exists()) {
+                const count = Object.keys(snapshot.val()).length;
+                const counterDisplay = document.getElementById('activeUsersCount');
+                if(counterDisplay) counterDisplay.innerText = count;
+            }
+        });
+    }
+
+    // --- SALAS (REALTIME DATABASE) ---
     document.getElementById('btnCreateRoom').addEventListener('click', async () => {
         const name = document.getElementById('newRoomName').value;
         const pass = document.getElementById('newRoomPass').value;
         if (!name || !pass) return Swal.fire('Error', 'Llena nombre y contraseña', 'error');
 
-        try {
-            const docRef = await addDoc(collection(db, "rooms"), {
-                name: name,
-                pass: pass,
-                challenges: ["Reto de prueba 1", "Reto de prueba 2"],
-                rotation: 0,
-                adminId: currentUser.uid
-            });
-            enterRoom(docRef.id, name);
-        } catch (e) {
-            console.error(e);
-            Swal.fire('Error', 'No se pudo crear la sala', 'error');
-        }
+        const newRoomRef = push(ref(db, 'rooms')); // Crea ID automático
+        currentRoomId = newRoomRef.key;
+
+        await set(newRoomRef, {
+            name: name,
+            pass: pass,
+            challenges: ["Reto 1", "Reto 2"],
+            rotation: 0,
+            adminId: currentUser.uid
+        });
+
+        enterRoom(currentRoomId, name);
     });
 
     document.getElementById('btnJoinRoom').addEventListener('click', async () => {
         const id = document.getElementById('joinRoomId').value.trim();
         const pass = document.getElementById('joinRoomPass').value;
-        if (!id || !pass) return Swal.fire('Error', 'Faltan datos', 'error');
+        
+        const roomRef = ref(db, `rooms/${id}`);
+        const snapshot = await get(roomRef);
 
-        try {
-            const roomDoc = await getDoc(doc(db, "rooms", id));
-            if (roomDoc.exists() && roomDoc.data().pass === pass) {
-                enterRoom(id, roomDoc.data().name);
-            } else {
-                Swal.fire('Error', 'ID o contraseña incorrectos', 'error');
-            }
-        } catch (e) {
-            Swal.fire('Error', 'Sala no encontrada', 'error');
+        if (snapshot.exists() && snapshot.val().pass === pass) {
+            enterRoom(id, snapshot.val().name);
+        } else {
+            Swal.fire('Error', 'Datos incorrectos', 'error');
         }
     });
 
@@ -187,25 +200,20 @@
         document.getElementById('currentRoomIdDisplay').innerText = roomId;
         showSection('rouletteSection');
         
-        // Escuchar cambios en tiempo real
-        unsubscribeRoom = onSnapshot(doc(db, "rooms", roomId), (doc) => {
-            const data = doc.data();
+        // Escuchar cambios (Sincronización total)
+        onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
+            const data = snapshot.val();
             if(data) {
                 challenges = data.challenges || [];
                 drawRoulette();
-                // Si la rotación cambia en la base de datos, giramos la ruleta localmente
-                if(data.rotation) canvas.style.transform = `rotate(${data.rotation}deg)`;
+                if(data.rotation) {
+                    document.getElementById('canvas').style.transform = `rotate(${data.rotation}deg)`;
+                }
             }
         });
     }
 
-    document.getElementById('btnLeaveRoom').addEventListener('click', () => {
-        if(unsubscribeRoom) unsubscribeRoom(); // Dejar de escuchar Firebase
-        currentRoomId = null;
-        showSection('dashboardSection');
-    });
-
-    // --- LÓGICA DE LA RULETA (CANVAS) ---
+    // --- LÓGICA DE LA RULETA (MANTENEMOS TU CANVAS) ---
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     const colors = ['#f1c40f', '#e67e22', '#e74c3c', '#9b59b6', '#3498db', '#1abc9c', '#2ecc71'];
@@ -214,17 +222,13 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const list = document.getElementById('challengeList');
         list.innerHTML = '';
-
         if (challenges.length === 0) return;
 
         const sliceAngle = (2 * Math.PI) / challenges.length;
         const radius = canvas.width / 2;
 
         challenges.forEach((challenge, i) => {
-            // Dibujar lista
             list.innerHTML += `<li class="list-group-item">${challenge}</li>`;
-            
-            // Dibujar rebanada
             const angle = i * sliceAngle - Math.PI / 2;
             ctx.beginPath();
             ctx.moveTo(radius, radius);
@@ -244,30 +248,23 @@
         });
     }
 
-    document.getElementById('btnAddChallenge').addEventListener('click', async () => {
+    document.getElementById('btnAddChallenge').addEventListener('click', () => {
         const input = document.getElementById('newChallenge');
         if(input.value && currentRoomId) {
-            await updateDoc(doc(db, "rooms", currentRoomId), {
-                challenges: arrayUnion(input.value)
-            });
+            const newChallenges = [...challenges, input.value];
+            update(ref(db, `rooms/${currentRoomId}`), { challenges: newChallenges });
             input.value = '';
         }
     });
 
     document.getElementById('spinBtn').addEventListener('click', async () => {
         if(!currentRoomId || challenges.length === 0) return;
+        const extraRotation = (5 * 360) + Math.floor(Math.random() * 360);
         
-        // En lugar de girar localmente, le decimos a Firebase que gire
-        // Como todos están escuchando con onSnapshot, la ruleta girará para todos a la vez.
-        const totalRotation = (5 * 360) + Math.floor(Math.random() * 360);
-        
-        // Obtenemos la rotación actual para sumarle la nueva
-        const roomDoc = await getDoc(doc(db, "rooms", currentRoomId));
-        const currentDbRotation = roomDoc.data().rotation || 0;
+        const snapshot = await get(ref(db, `rooms/${currentRoomId}/rotation`));
+        const currentRot = snapshot.val() || 0;
 
-        await updateDoc(doc(db, "rooms", currentRoomId), {
-            rotation: currentDbRotation + totalRotation
-        });
+        update(ref(db, `rooms/${currentRoomId}`), { rotation: currentRot + extraRotation });
     });
 
 </script>
