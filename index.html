@@ -8,11 +8,10 @@
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* CSS PROFESIONAL Y MODERNO */
         :root {
             --bg-dark: #121212;
             --panel-bg: #1e1e1e;
-            --accent: #bb86fc; /* Tono morado moderno */
+            --accent: #bb86fc; 
             --accent-hover: #9965f4;
             --text-main: #e0e0e0;
         }
@@ -25,14 +24,27 @@
         }
         .hidden { display: none !important; }
         .card { background-color: var(--panel-bg); border: 1px solid #333; color: white; }
-        .form-control { background-color: #2c2c2c; border: 1px solid #444; color: white; }
-        .form-control:focus { background-color: #333; color: white; border-color: var(--accent); box-shadow: 0 0 0 0.25rem rgba(187, 134, 252, 0.25); }
+        
+        /* CORRECCIÓN DE LOS INPUTS (TEXTO VISIBLE) */
+        .form-control { 
+            background-color: #2c2c2c !important; 
+            border: 1px solid #444 !important; 
+            color: #ffffff !important; /* Letras blancas */
+        }
+        .form-control::placeholder { 
+            color: #999999 !important; /* Texto de fondo gris */
+        }
+        .form-control:focus { 
+            border-color: var(--accent) !important; 
+            box-shadow: 0 0 0 0.25rem rgba(187, 134, 252, 0.25) !important; 
+        }
+        
         .btn-accent { background-color: var(--accent); color: #000; font-weight: bold; border: none; }
         .btn-accent:hover { background-color: var(--accent-hover); color: #000; }
         
         /* RULETA */
         .roulette-wrapper { position: relative; width: 100%; max-width: 400px; aspect-ratio: 1/1; margin: 0 auto; }
-        #canvas { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 30px rgba(0,0,0,0.5); transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); border: 4px solid #333; }
+        #canvas { width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 30px rgba(0,0,0,0.5); border: 4px solid #333; }
         .marker { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); z-index: 10; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 40px solid #cf6679; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5)); }
         .spin-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 25%; height: 25%; border-radius: 50%; background: #03dac6; color: #000; font-weight: 900; font-size: 1.2rem; z-index: 20; border: 4px solid var(--panel-bg); cursor: pointer; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.2), 0 4px 10px rgba(0,0,0,0.5); transition: transform 0.1s; }
         .spin-btn:active { transform: translate(-50%, -50%) scale(0.95); }
@@ -40,11 +52,10 @@
         /* CHAT Y PANELES */
         .chat-container { height: 350px; overflow-y: auto; padding: 10px; background: #181818; border-radius: 8px; margin-bottom: 10px; border: 1px solid #333; }
         .chat-message { margin-bottom: 8px; font-size: 0.9rem; }
-        .chat-name { font-weight: bold; color: var(--accent); margin-right: 5px; }
+        .chat-name { font-weight: bold; margin-right: 5px; }
         .chat-time { font-size: 0.7rem; color: #888; float: right; margin-top: 3px; }
         .list-group-item { background-color: #2c2c2c; border-color: #444; color: white; }
         
-        /* SCROLLBAR CUSTOM */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #181818; }
         ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
@@ -69,10 +80,8 @@
         <div class="col-md-5 text-center">
             <div class="card p-5 shadow-lg">
                 <h2 class="mb-4 fw-bold">Entra al Juego</h2>
-                <p class="text-muted mb-4">Inicia sesión para crear o unirte a salas en tiempo real.</p>
                 <button class="btn btn-light btn-lg w-100 text-dark fw-bold d-flex align-items-center justify-content-center gap-2" id="btnGoogleLogin">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="20" alt="Google"> 
-                    Ingresar con Google
+                    <i class="fab fa-google text-danger fs-4"></i> Ingresar con Google
                 </button>
             </div>
         </div>
@@ -83,7 +92,7 @@
             <div class="col-md-6">
                 <div class="card shadow p-4 h-100">
                     <h4 class="mb-3 text-success"><i class="fas fa-plus-circle"></i> Crear Sala</h4>
-                    <input type="text" id="newRoomName" class="form-control mb-3 p-2" placeholder="Nombre de tu sala (Ej: Los del barrio)">
+                    <input type="text" id="newRoomName" class="form-control mb-3 p-2" placeholder="Nombre de tu sala">
                     <input type="password" id="newRoomPass" class="form-control mb-4 p-2" placeholder="Contraseña secreta">
                     <button class="btn btn-success btn-lg w-100" id="btnCreateRoom">Crear y Entrar</button>
                 </div>
@@ -91,7 +100,7 @@
             <div class="col-md-6">
                 <div class="card shadow p-4 h-100">
                     <h4 class="mb-3 text-info"><i class="fas fa-sign-in-alt"></i> Unirse a Sala</h4>
-                    <input type="text" id="joinRoomId" class="form-control mb-3 p-2" placeholder="Pega el ID de la sala aquí">
+                    <input type="text" id="joinRoomId" class="form-control mb-3 p-2" placeholder="Pega el ID aquí">
                     <input type="password" id="joinRoomPass" class="form-control mb-4 p-2" placeholder="Contraseña">
                     <button class="btn btn-info btn-lg w-100 text-dark fw-bold" id="btnJoinRoom">Entrar</button>
                 </div>
@@ -118,12 +127,11 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        <label class="form-label text-muted small fw-bold">AÑADIR RETO</label>
                         <div class="input-group mb-3">
-                            <input type="text" id="newChallenge" class="form-control" placeholder="Ej: Bailar 10 seg..." maxlength="30">
+                            <input type="text" id="newChallenge" class="form-control" placeholder="Ej: Cantar sin parar...">
                             <button class="btn btn-accent" id="btnAddChallenge"><i class="fas fa-plus"></i></button>
                         </div>
-                        <ul class="list-group list-group-flush" id="challengeList" style="max-height: 200px; overflow-y: auto;"></ul>
+                        <ul class="list-group list-group-flush" id="challengeList" style="max-height: 250px; overflow-y: auto;"></ul>
                     </div>
                 </div>
             </div>
@@ -142,10 +150,9 @@
                         <h6 class="mb-0"><i class="fas fa-comments text-info"></i> Chat en vivo</h6>
                     </div>
                     <div class="card-body p-2 d-flex flex-column">
-                        <div class="chat-container flex-grow-1" id="chatBox">
-                            </div>
+                        <div class="chat-container flex-grow-1" id="chatBox"></div>
                         <div class="input-group mt-2">
-                            <input type="text" id="chatInput" class="form-control form-control-sm" placeholder="Escribe un mensaje..." autocomplete="off">
+                            <input type="text" id="chatInput" class="form-control form-control-sm" placeholder="Escribe..." autocomplete="off">
                             <button class="btn btn-sm btn-info" id="btnSendChat"><i class="fas fa-paper-plane text-dark"></i></button>
                         </div>
                     </div>
@@ -160,11 +167,11 @@
     import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getDatabase, ref, set, push, onValue, update, get, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // --- PEGA TUS CREDENCIALES AQUÍ ---
     const firebaseConfig = {
+        // PEGA TUS CREDENCIALES EXACTAS AQUÍ
         apiKey: "AIzaSyAYwcsRMvGuXdIu7iVv-USSxSGBLlaOGIM",
         authDomain: "ruleta-cb504.firebaseapp.com",
-        databaseURL: "https://ruleta-cb504-default-rtdb.firebaseio.com", // Confirma que sea tu URL
+        databaseURL: "https://ruleta-cb504-default-rtdb.firebaseio.com", 
         projectId: "ruleta-cb504",
         storageBucket: "ruleta-cb504.firebasestorage.app",
         messagingSenderId: "160498901059",
@@ -178,8 +185,10 @@
 
     let currentUser = null;
     let currentRoomId = null;
+    let currentRoomAdmin = null;
     let challenges = [];
-    let myParticipantRef = null; // Para borrar al usuario cuando salga
+    let myParticipantRef = null; 
+    let currentRotation = -1; // Control para la animación
 
     const showSection = (id) => {
         ['authSection', 'dashboardSection', 'rouletteSection'].forEach(s => document.getElementById(s).classList.add('hidden'));
@@ -190,7 +199,7 @@
         if (user) {
             currentUser = user;
             document.getElementById('userInfo').classList.remove('hidden');
-            document.getElementById('userName').innerText = user.displayName.split(' ')[0]; // Solo el primer nombre
+            document.getElementById('userName').innerText = user.displayName.split(' ')[0];
             document.getElementById('userAvatar').src = user.photoURL;
             showSection('dashboardSection');
         } else {
@@ -202,18 +211,25 @@
 
     document.getElementById('btnGoogleLogin').addEventListener('click', () => signInWithPopup(auth, googleProvider));
     document.getElementById('btnLogout').addEventListener('click', () => {
-        if(myParticipantRef) remove(myParticipantRef); // Me borro de la sala antes de salir
+        if(myParticipantRef) remove(myParticipantRef); 
         signOut(auth)
     });
 
-    // --- SALAS ---
+    // --- FUNCIÓN GLOBAL PARA BORRAR RETOS (SOLO ADMIN) ---
+    window.deleteChallenge = function(index) {
+        if (currentUser.uid !== currentRoomAdmin) return;
+        const newChallenges = [...challenges];
+        newChallenges.splice(index, 1);
+        update(ref(db, `rooms/${currentRoomId}`), { challenges: newChallenges });
+    };
+
     document.getElementById('btnCreateRoom').addEventListener('click', async () => {
         const name = document.getElementById('newRoomName').value;
         const pass = document.getElementById('newRoomPass').value;
         if (!name || !pass) return Swal.fire('Alto', 'Falta el nombre o la contraseña', 'warning');
 
         const newRoomRef = push(ref(db, 'rooms'));
-        currentRoomId = newRoomRef.key;
+        const newId = newRoomRef.key;
 
         await set(newRoomRef, {
             name: name,
@@ -222,16 +238,13 @@
             rotation: 0,
             adminId: currentUser.uid
         });
-
-        enterRoom(currentRoomId, name);
+        enterRoom(newId, name);
     });
 
     document.getElementById('btnJoinRoom').addEventListener('click', async () => {
         const id = document.getElementById('joinRoomId').value.trim();
         const pass = document.getElementById('joinRoomPass').value;
-        
-        if(!id) return Swal.fire('Alto', 'Ingresa el ID', 'warning');
-
+        if(!id) return;
         const snapshot = await get(ref(db, `rooms/${id}`));
         if (snapshot.exists() && snapshot.val().pass === pass) {
             enterRoom(id, snapshot.val().name);
@@ -242,35 +255,69 @@
 
     function enterRoom(roomId, roomName) {
         currentRoomId = roomId;
+        currentRotation = -1; // Resetear giro
         document.getElementById('currentRoomName').innerText = roomName;
         document.getElementById('currentRoomIdDisplay').innerText = roomId;
-        document.getElementById('chatBox').innerHTML = ''; // Limpiar chat anterior
+        document.getElementById('chatBox').innerHTML = ''; 
         showSection('rouletteSection');
         
-        // 1. Lógica de Participantes (Presencia)
         myParticipantRef = ref(db, `rooms/${roomId}/participants/${currentUser.uid}`);
         set(myParticipantRef, { name: currentUser.displayName });
-        
-        // ¡MAGIA! Si cierras la pestaña o se cae el internet, Firebase te borra automáticamente de la lista
         onDisconnect(myParticipantRef).remove();
 
-        // 2. Escuchar cuántos participantes hay
         onValue(ref(db, `rooms/${roomId}/participants`), (snap) => {
             const count = snap.exists() ? Object.keys(snap.val()).length : 0;
             document.getElementById('participantCount').innerText = count;
         });
 
-        // 3. Escuchar la ruleta
+        // Sincronizar Ruleta y Mostrar Ganador
         onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
             const data = snapshot.val();
             if(data) {
+                currentRoomAdmin = data.adminId; // Guardar quién es el admin
                 challenges = data.challenges || [];
                 drawRoulette();
-                if(data.rotation) document.getElementById('canvas').style.transform = `rotate(${data.rotation}deg)`;
+
+                const canvasEl = document.getElementById('canvas');
+                
+                if (data.rotation !== undefined) {
+                    if (currentRotation === -1) {
+                        // Primera vez que carga al entrar a la sala
+                        currentRotation = data.rotation;
+                        canvasEl.style.transition = 'none'; // Quitar transición para que cargue instantáneo
+                        canvasEl.style.transform = `rotate(${currentRotation}deg)`;
+                        setTimeout(() => { canvasEl.style.transition = 'transform 4s cubic-bezier(0.15, 0, 0.15, 1)'; }, 50);
+                    } else if (data.rotation > currentRotation) {
+                        // Alguien giró la ruleta
+                        currentRotation = data.rotation;
+                        canvasEl.style.transform = `rotate(${currentRotation}deg)`;
+                        
+                        // Esperar 4 segundos (lo que dura el giro) y mostrar ganador
+                        setTimeout(() => {
+                            if(challenges.length > 0) {
+                                const gradosFijos = currentRotation % 360;
+                                // El puntero está arriba, calculamos el índice invertido
+                                const anguloPuntero = (360 - gradosFijos) % 360;
+                                const tamañoRebanada = 360 / challenges.length;
+                                const indiceGanador = Math.floor(anguloPuntero / tamañoRebanada);
+                                const retoGanador = challenges[indiceGanador];
+                                
+                                Swal.fire({
+                                    title: '🎯 ¡Reto Seleccionado!',
+                                    text: retoGanador, // Muestra el texto completo
+                                    confirmButtonText: '¡A cumplirlo!',
+                                    confirmButtonColor: '#bb86fc',
+                                    background: '#1e1e1e',
+                                    color: '#fff',
+                                    backdrop: `rgba(0,0,0,0.8)`
+                                });
+                            }
+                        }, 4000);
+                    }
+                }
             }
         });
 
-        // 4. Escuchar el Chat
         onValue(ref(db, `rooms/${roomId}/chat`), (snap) => {
             const chatBox = document.getElementById('chatBox');
             chatBox.innerHTML = '';
@@ -278,7 +325,6 @@
                 snap.forEach(msgSnap => {
                     const msg = msgSnap.val();
                     const time = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    // Diferenciar si el mensaje es mío o de otro
                     const color = msg.uid === currentUser.uid ? 'text-info' : 'var(--accent)';
                     chatBox.innerHTML += `
                         <div class="chat-message">
@@ -287,18 +333,17 @@
                             <span class="chat-time">${time}</span>
                         </div>`;
                 });
-                chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll hacia abajo
+                chatBox.scrollTop = chatBox.scrollHeight; 
             }
         });
     }
 
     document.getElementById('btnLeaveRoom').addEventListener('click', () => {
-        if(myParticipantRef) remove(myParticipantRef); // Me borro de la sala manualmente
+        if(myParticipantRef) remove(myParticipantRef); 
         currentRoomId = null;
         showSection('dashboardSection');
     });
 
-    // --- ENVIAR MENSAJE DE CHAT ---
     const sendMsg = () => {
         const input = document.getElementById('chatInput');
         if(input.value.trim() && currentRoomId) {
@@ -314,7 +359,6 @@
     document.getElementById('btnSendChat').addEventListener('click', sendMsg);
     document.getElementById('chatInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMsg(); });
 
-    // --- LÓGICA DE LA RULETA (CANVAS) ---
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     const colors = ['#bb86fc', '#03dac6', '#cf6679', '#f2a900', '#0288d1', '#7b1fa2', '#cddc39'];
@@ -329,8 +373,18 @@
         const radius = canvas.width / 2;
 
         challenges.forEach((challenge, i) => {
+            // Recortar texto si es muy largo
+            const shortText = challenge.length > 20 ? challenge.substring(0, 20) + "..." : challenge;
+            
+            // Botón de eliminar (Solo visible si eres el Admin de la sala)
+            let deleteBtnHtml = '';
+            if (currentUser && currentUser.uid === currentRoomAdmin) {
+                deleteBtnHtml = `<button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteChallenge(${i})" title="Borrar reto"><i class="fas fa-trash"></i></button>`;
+            }
+
             list.innerHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                <span>${challenge}</span>
+                <span title="${challenge}">${shortText}</span>
+                ${deleteBtnHtml}
             </li>`;
             
             const angle = i * sliceAngle - Math.PI / 2;
@@ -340,16 +394,17 @@
             ctx.fillStyle = colors[i % colors.length];
             ctx.fill();
             ctx.lineWidth = 2;
-            ctx.strokeStyle = "#1e1e1e"; // Separadores oscuros
+            ctx.strokeStyle = "#1e1e1e"; 
             ctx.stroke();
             
             ctx.save();
             ctx.translate(radius, radius);
             ctx.rotate(angle + sliceAngle / 2);
             ctx.textAlign = "right";
-            ctx.fillStyle = "#121212"; // Texto oscuro para contrastar con colores vivos
-            ctx.font = "bold 16px 'Segoe UI'";
-            ctx.fillText(challenge.substring(0, 15), radius - 30, 6);
+            ctx.fillStyle = "#121212"; 
+            ctx.font = "bold 15px 'Segoe UI'";
+            // En el canvas también mostramos el texto corto
+            ctx.fillText(shortText, radius - 30, 6);
             ctx.restore();
         });
     }
